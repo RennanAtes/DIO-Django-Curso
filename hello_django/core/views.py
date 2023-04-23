@@ -9,3 +9,4 @@ def hello(request,nome,idade):
 def soma(request,num1,num2):
     soma = num1+num2
     return HttpResponse(f"A soma de {num1}+{num2}={soma}")
+
