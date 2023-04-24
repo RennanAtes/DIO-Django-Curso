@@ -3,6 +3,7 @@ from .models import Evento
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from datetime import datetime, timedelta
 # Create your views here.
 
 def login_view(request):
@@ -39,8 +40,10 @@ def eventos_titulo(request,titulo_evento):
 def lista_eventos(request):
 
     usuario = request.user
+    data_atual = datetime.now() - timedelta(hours=1)
 
-    evento = Evento.objects.filter(usuario=usuario)
+    evento = Evento.objects.filter(usuario=usuario,
+                                   data_evento__gt = data_atual)
     context = { 
         'eventos': evento            
                 }
@@ -55,13 +58,13 @@ def evento(request):
     id_evento = request.GET.get('id')
     usuario = request.user
     dados ={ }
-    evento = Evento.objects.get(id=id_evento)
-
+    if not id_evento is None:
+        evento = Evento.objects.get(id=id_evento)
     #Verificando se o usuario e dono daquela agenda
     if id_evento and evento.usuario == usuario :
         dados['evento'] = Evento.objects.get(id = id_evento)
     # Se não for, verifica e redireciona ele para a página inicial
-    elif not evento.usuario == usuario:
+    elif id_evento and not evento.usuario == usuario:
         return redirect('/')
     
     # method='POST' para criar ou editar uma agenda.
@@ -89,7 +92,6 @@ def evento(request):
                                 data_evento=data_evento,
                                 descricao=descricao,
                                 usuario=usuario,
-                                
                                 )
         return redirect('/')
     return render(request,'evento.html', dados)
