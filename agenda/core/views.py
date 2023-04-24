@@ -32,6 +32,7 @@ def logout_user(request):
 def eventos_titulo(request,titulo_evento):
     Eventos = Evento.objects.get(titulo = titulo_evento)
     local_evento = Eventos.usuario
+    print('passou por aqui')
     return HttpResponse(f'{local_evento}')
 
 @login_required(login_url='/login/')
@@ -50,18 +51,56 @@ def lista_eventos(request):
 
 @login_required(login_url='/login/')
 def evento(request):
-    if request.POST:
 
+    id_evento = request.GET.get('id')
+    usuario = request.user
+    dados ={ }
+    evento = Evento.objects.get(id=id_evento)
+
+    #Verificando se o usuario e dono daquela agenda
+    if id_evento and evento.usuario == usuario :
+        dados['evento'] = Evento.objects.get(id = id_evento)
+    # Se não for, verifica e redireciona ele para a página inicial
+    elif not evento.usuario == usuario:
+        return redirect('/')
+    
+    # method='POST' para criar ou editar uma agenda.
+    if request.POST:
         titulo = request.POST.get('titulo')
         data_evento = request.POST.get('data_evento')
         descricao = request.POST.get('descricao')
-        usuario = request.user
+        id_evento = request.POST.get('id_evento')
 
-        Evento.objects.create(titulo=titulo,
-                              data_evento=data_evento,
-                              descricao=descricao,
-                              usuario=usuario,
-                              
-                              )
+        #Se o id_evento for verdadeiro, quer dizer que é para editar.
+        if id_evento:
+
+            if evento.usuario == usuario:
+                evento.titulo = titulo
+                evento.descricao = descricao
+                evento.data_evento = data_evento
+                evento.save()
+
+
+            #Evento.objects.filter(id=id_evento).update(titulo=titulo,
+                                                       #data_evento = data_evento,
+                                                       #descricao = descricao)
+        else: 
+            Evento.objects.create(titulo=titulo,
+                                data_evento=data_evento,
+                                descricao=descricao,
+                                usuario=usuario,
+                                
+                                )
         return redirect('/')
-    return render(request,'evento.html')
+    return render(request,'evento.html', dados)
+
+
+@login_required(login_url='/login/')
+def delete_evento(request, id_evento):
+
+    user = request.user
+    evento = Evento.objects.get(id=id_evento)
+
+    if user == evento.usuario:
+        evento.delete()
+    return redirect('/')
